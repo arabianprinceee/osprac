@@ -1,28 +1,39 @@
 #include <unistd.h>
-#include <sys/types.h>
-#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 int main()
 {
-    int pfd;
     int fd[2];
-    char a[100];
-    int c,b;
-    int size;
-    if ((pfd = pipe(fd) < 0)) {
-        printf("ошибка");
-        exit(1);
-    }
-    else {
-        while(c != b)
-        {
-            c=write(fd[1],"h",2);
-            b=read(fd[0],a,1);
-            size++;
-            printf("Pipe size is : %d\n", size);
+    int pipeSize = 0, tmpSize = 1;
+    char* string = malloc(sizeof(char));
+    
+    if (pipe(fd) >= 0) {
+        fcntl(fd[1], F_SETFL, fcntl(fd[1], F_GETFL) | O_NONBLOCK);
+        
+        tmpSize = write(fd[1], string, 1);
+        
+        while (tmpSize == 1) {
+            pipeSize += 1;
+            tmpSize = write(fd[1], string, 1);
         }
+        
+        printf("pipe size: %d\n", pipeSize);
+        
+        free(string);
+        
+        if (close(fd[0]) < 0)
+            printf("Can't close input stream\n");
+        if (close(fd[1]) < 0)
+            printf("Can't close output stream\n");
+        
         return 0;
+    } else {
+        printf("Error with pipe!");
+        free(string);
+        exit(-1);
     }
 }
